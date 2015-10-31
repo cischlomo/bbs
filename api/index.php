@@ -1,6 +1,25 @@
 <?php
+function viewtopic ($tid){
+ global $jsonobj,$m;
+ $sql="select t.id,p.id from ci_posts as p left join ci_topics as t on t.id=p.topic_id where t.id=$tid group by t.id, p.id";
+ exit(json_encode(($m->query($sql))->fetch_all(MYSQLI_ASSOC)));
+}
+function newtopic($fid){
+ global $jsonobj,$m;
+ //print "new topic in forum $fid\n";
+ //print "topic: " . $jsonobj->topic . "\n";
+ //print "message: " . $jsonobj->message. "\n";
+ $jsonobj->cookie=$_COOKIE;
+ $sql="insert into ci_topics (subject,posted) values (?,?)";
+ $sth=$m->prepare($sql) or die($m->error);
+ $d=time();
+ $sth->bind_param("si",$jsonobj->subject,$d);
+ $sth->execute();
+ exit(json_encode(array("topic_id"=>$m->insert_id)));
+}
 ini_set('display_errors','on');
 ini_set('error_reporting',E_ALL);
+require_once('../lib/RegexRouter.php');
 $m=new Mysqli("localhost","root");
 $m->select_db("campidiot");
 $router = new RegexRouter();
@@ -16,24 +35,14 @@ $router->post( $prefix . '\/post\/([0-9]+)\/?$/',  "replytopost");
  
 function viewforum ($fid){
  global $jsonobj, $m;
- $sql="select * from ci_forums where id=$fid";
+ $sql="select * from ci_topics where forum_id=$fid";
  exit(json_encode(($m->query($sql))->fetch_all(MYSQLI_ASSOC)));
-}
-function viewtopic ($fid){
- global $jsonobj;
-
 }
 function getpost ($pid){
  global $jsonobj;
  print "read post# $pid";
 }
 
-function newtopic($fid){
- global $jsonobj;
- print "new topic in forum $fid\n";
- print "topic: " . $jsonobj->topic . "\n";
- print "message: " . $jsonobj->message. "\n";
-}
 function replytotopic ($tid){
  global $jsonobj;
  print "reply to topic $tid<p>";
@@ -45,33 +54,11 @@ function replytopost ($pid){
  print "message: " . $jsonobj->message;
 }
 
+//exit(file_get_contents("php://input"));
 $jsonobj=json_decode(file_get_contents("php://input"));
+//exit(print_r($jsonobj,1));
 $router->execute($_SERVER['REQUEST_URI']);
 
-
-class RegexRouter {
-    
-    private $getroutes = array(), $postroutes=array();
-    
-    public function get ($pattern, $callback) {
-        $this->getroutes[$pattern] = $callback;
-    }
-    
-    public function post ($pattern, $callback) {
-        $this->postroutes[$pattern] = $callback;
-    }
-    
-    public function execute($uri) {
-        foreach (
-          ($_SERVER['REQUEST_METHOD']==='POST' ? $this->postroutes : $this->getroutes)
-            as $pattern => $callback) {
-            if (preg_match($pattern, $uri, $params) === 1) {
-                array_shift($params);
-                return call_user_func_array($callback, array_values($params));
-            }
-        }
-    }
-} 
 //curl -H "Content-Type: application/json" -X POST -d '{"username":"xyz","password":"xyz"}' http://xbmc/p.php
 
 ?>
