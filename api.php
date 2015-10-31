@@ -1,4 +1,8 @@
 <?php
+function replytotopic ($tid){
+ global $jsonobj;
+ exit(json_encode($jsonobj,1));
+}
 function viewtopic ($tid){
  global $jsonobj,$m;
  $sql="select subject from ci_topics where id=$tid";
@@ -49,11 +53,6 @@ function getpost ($pid){
  print "read post# $pid";
 }
 
-function replytotopic ($tid){
- global $jsonobj;
- print "reply to topic $tid<p>";
- print "message: " . $jsonobj->message;
-}
 function replytopost ($pid){
  global $jsonobj;
  print "reply to post $pid<p>";

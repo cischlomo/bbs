@@ -1,4 +1,10 @@
 <?php
+function replytotopic ($tid){
+ print "reply to topic $tid<p>";
+ $url="http://xbmc/bbs/api/topic/$tid";
+ $response=curlstuff($url);
+ exit(json_encode($response));
+}
 function viewtopic ($tid){
  global $jsonobj;
  $resp=json_decode(file_get_contents("http://xbmc/bbs/api/topic/$tid"));
@@ -8,10 +14,21 @@ function viewtopic ($tid){
  <?php foreach ($resp->posts as $post) : ?>
   <?=$post->message?><p>
  <?php endforeach ?>
+
+<h1>Reply</h1>
+<form action="/bbs/ui/topic/<?=$tid?>" method="POST">
+<textarea name="message"></textarea>
+<input type="submit">
+</form>
  <?php
 }
 function newtopic($fid){
  $url="http://xbmc/bbs/api/forum/$fid";
+ $response=curlstuff($url);
+ print "redirecting to http://xbmc/bbs/ui/topic/$response->topic_id";
+}
+function curlstuff($url){
+//error_log(print_r($_REQUEST,1));
  $curlopts= array( 
         CURLOPT_POST => 1, 
         CURLOPT_HEADER => 0, 
@@ -23,11 +40,7 @@ function newtopic($fid){
  );
  $ch = curl_init();
  curl_setopt_array($ch,$curlopts);
- $response=json_decode(curl_exec($ch));
- #print "new topic in forum $fid\n";
- #print "topic: " . $_REQUEST['subject']; 
- #print " message: " . $_REQUEST['message'];
- print "redirecting to http://xbmc/bbs/ui/topic/$response->topic_id";
+ return json_decode(curl_exec($ch));
 }
 
 
@@ -70,11 +83,6 @@ function getpost ($pid){
  print "read post# $pid";
 }
 
-function replytotopic ($tid){
- global $jsonobj;
- print "reply to topic $tid<p>";
- print "message: " . $jsonobj->message;
-}
 function replytopost ($pid){
  global $jsonobj;
  print "reply to post $pid<p>";
