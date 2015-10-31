@@ -1,4 +1,22 @@
 <?php
+require_once("lib/RegexRouter.php");
+ini_set('display_errors','on');
+ini_set('error_reporting',E_ALL);
+$router = new RegexRouter(array(
+ "prefix"=>"/^\/bbs\/ui",
+ "get"=>array(
+  "forum"=>"viewforum",
+  "topic"=>"viewtopic",
+  "post"=>"getpost",
+  "nt"=>"newtopicform",
+  ),
+ "post"=>array(
+  "forum"=>"newtopic",
+  "topic"=>"replytotopic",
+  "post"=>"replytopost"
+  )
+ ));
+
 function getpost ($pid){
  global $jsonobj;
  $url="http://xbmc/bbs/api/post/$pid";
@@ -52,20 +70,6 @@ function curlstuff($url){
 }
 
 
-require_once("lib/RegexRouter.php");
-ini_set('display_errors','on');
-ini_set('error_reporting',E_ALL);
-$router = new RegexRouter();
-$prefix="/^\/bbs\/ui";
-
-$router->get( $prefix . '\/forum\/([0-9]+)\/?$/',  "viewforum");
-$router->get( $prefix . '\/topic\/([0-9]+)\/?$/',  "viewtopic");
-$router->get( $prefix . '\/post\/([0-9]+)\/?$/',   "getpost");
-$router->get( $prefix . '\/nt\/([0-9]+)\/?$/',   "newtopicform");
-
-$router->post( $prefix . '\/forum\/([0-9]+)\/?$/',  "newtopic");
-$router->post( $prefix . '\/topic\/([0-9]+)\/?$/', "replytotopic");
-$router->post( $prefix . '\/post\/([0-9]+)\/?$/',  "replytopost");
  
 function newtopicform ($fid) {
  ?>
