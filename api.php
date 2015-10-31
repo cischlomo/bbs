@@ -33,7 +33,7 @@ function viewtopic ($tid){
  global $jsonobj,$db;
  $sql="select subject from ci_topics where id=$tid";
  list($subject)=$db->query($sql)->fetch_row() or die ($db->error);
- $sql="select id,message,replyto from ci_posts where topic_id=$tid";
+ $sql="select id,message,replyto,id as pid from ci_posts where topic_id=$tid";
  $resp=$db->query($sql)->fetch_all(MYSQLI_ASSOC);
  $output=array("tid"=>$tid,"subject"=>$subject,"posts"=>$resp);
  exit(json_encode($output));

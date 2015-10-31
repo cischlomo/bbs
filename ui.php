@@ -39,6 +39,7 @@ function viewtopic ($tid){
  <h1>Topic: <?=$resp->subject?></h1>
  <p>
  <?php foreach ($resp->posts as $post) : ?>
+  <a name="#<?= $post->pid ?>"></a>
   <?=$post->message?><p>
  <?php endforeach ?>
 
