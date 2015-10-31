@@ -90,7 +90,6 @@ function newtopic($fid){
  $url=$httproot . "/api/forum/$fid";
  $response=curlstuff($url);
  header ("Location: /bbs/redir.php?url=$httproot/ui/topic/$response->topic_id");
- //print "redirecting to http://xbmc/bbs/ui/topic/$response->topic_id";
 }
 
  
