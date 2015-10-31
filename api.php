@@ -25,7 +25,7 @@ function getpost ($pid){
   $resp['pid']=$pid;
   exit(json_encode($resp));
  } else {
-  exit(json_encode(array("error"=>"post is not contained by a topic")));
+  exit(json_encode(array("error"=>"no such post")));
  }
 }
 require_once('lib/RegexRouter.php');
