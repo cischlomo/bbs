@@ -22,10 +22,10 @@ function viewtopic ($tid){
 function newtopic($fid){
  global $jsonobj,$m;
  $jsonobj->cookie=$_COOKIE;
- $sql="insert into ci_topics (subject,posted) values (?,?)";
+ $sql="insert into ci_topics (subject,posted,forum_id) values (?,?,?)";
  $sth=$m->prepare($sql) or die($m->error);
  $d=time();
- $sth->bind_param("si",$jsonobj->subject,$d);
+ $sth->bind_param("sii",$jsonobj->subject,$d,$fid);
  $sth->execute();
  $tid=$m->insert_id;
  $sql="insert into ci_posts (topic_id,message) values (?,?)";
