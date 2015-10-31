@@ -4,6 +4,6 @@ SetHandler application/x-httpd-php
 RewriteEngine On
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule api /var/www/bbs/api/index.php [QSA,L]
-RewriteRule ui /var/www/bbs/ui/index.php [QSA,L]
+RewriteRule api /var/www/bbs/api.php [QSA,L]
+RewriteRule ui /var/www/bbs/ui.php [QSA,L]
 

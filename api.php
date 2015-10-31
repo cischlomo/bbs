@@ -25,7 +25,7 @@ function newtopic($fid){
 }
 ini_set('display_errors','on');
 ini_set('error_reporting',E_ALL);
-require_once('../lib/RegexRouter.php');
+require_once('lib/RegexRouter.php');
 $m=new Mysqli("localhost","root");
 $m->select_db("campidiot");
 $router = new RegexRouter();

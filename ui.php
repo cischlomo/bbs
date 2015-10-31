@@ -31,7 +31,7 @@ function newtopic($fid){
 }
 
 
-require_once("../lib/RegexRouter.php");
+require_once("lib/RegexRouter.php");
 ini_set('display_errors','on');
 ini_set('error_reporting',E_ALL);
 $router = new RegexRouter();
