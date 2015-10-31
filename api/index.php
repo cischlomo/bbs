@@ -1,16 +1,18 @@
 <?php
+ini_set('display_errors','on');
 ini_set('error_reporting',E_ALL);
 $m=new Mysqli("localhost","root");
 $m->select_db("campidiot");
 $router = new RegexRouter();
+$prefix="/^\/bbs\/api";
 
-$router->get( '/^\/bbs\/forum\/([0-9]+)\/?$/',  "viewforum");
-$router->get( '/^\/bbs\/topic\/([0-9]+)\/?$/',  "viewtopic");
-$router->get( '/^\/bbs\/post\/([0-9]+)\/?$/',   "getpost");
+$router->get( $prefix . '\/forum\/([0-9]+)\/?$/',  "viewforum");
+$router->get( $prefix . '\/topic\/([0-9]+)\/?$/',  "viewtopic");
+$router->get( $prefix . '\/post\/([0-9]+)\/?$/',   "getpost");
 
-$router->post('/^\/bbs\/forum\/([0-9]+)\/?$/',  "newtopic");
-$router->post( '/^\/bbs\/topic\/([0-9]+)\/?$/', "replytotopic");
-$router->post( '/^\/bbs\/post\/([0-9]+)\/?$/',  "replytopost");
+$router->post( $prefix . '\/forum\/([0-9]+)\/?$/',  "newtopic");
+$router->post( $prefix . '\/topic\/([0-9]+)\/?$/', "replytotopic");
+$router->post( $prefix . '\/post\/([0-9]+)\/?$/',  "replytopost");
  
 function viewforum ($fid){
  global $jsonobj, $m;
