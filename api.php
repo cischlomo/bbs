@@ -94,11 +94,8 @@ function viewforum ($fid){
  $sql="select * from ci_topics where forum_id=$fid";
  exit(json_encode(($db->query($sql))->fetch_all(MYSQLI_ASSOC)));
 }
-//exit(file_get_contents("php://input"));
 $jsonobj=json_decode(file_get_contents("php://input"));
-//exit(print_r($jsonobj,1));
 $router->execute($_SERVER['REQUEST_URI']);
 
-//curl -H "Content-Type: application/json" -X POST -d '{"username":"xyz","password":"xyz"}' http://xbmc/p.php
 
 ?>

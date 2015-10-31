@@ -1,11 +1,24 @@
 <?php
-ini_set('display_errors','on');
-ini_set('error_reporting',E_ALL);
+require_once("config.php");
 require_once("lib/RegexRouter.php");
 
+function viewforum ($fid){
+ global $httproot;
+ $topics=json_decode(file_get_contents($httproot . "/api/forum/$fid"));
+ if (isset($topics->error)){
+  exit($topics->error);
+ }
+ print "<a href='/bbs/ui/topic/form/$fid'>new topic</a><p>";
+ print "<h1>Topics</h1>\n";
+ foreach ($topics as $topic){
+  print "<h4>$topic->subject</h4>\n";
+  print "<h4>by: $topic->poster</h4>\n";
+ }
+}
 function replytopost ($pid){
+ global $phpself;
  print "reply to post $pid<p>";
- $url="http://xbmc/bbs/api/post/$pid";
+ $url= $httproot . "/api/post/$pid";
  $response=curlstuff($url);
  getpost($response->pid);
  //exit(print_r($response,1));
@@ -21,7 +34,7 @@ function replypostform ($pid){
  <?php
 }
 function viewtopic ($tid){
- $url="http://xbmc/bbs/api/topic/$tid";
+ $url=$httproot . "/api/topic/$tid";
  $resp=json_decode(file_get_contents($url));
  if (isset($resp->error)){
   exit($resp->error);
@@ -31,7 +44,7 @@ function viewtopic ($tid){
  <p>
  <?php foreach ($resp->posts as $post) : ?>
   <a name="#<?= $post->pid ?>"></a>
-  <?= $post->message ?><a href="http://xbmc/bbs/ui/post/reply/form/<?= $post->pid ?>">Reply</a>
+  <?= $post->message ?><a href="/bbs/ui/post/reply/form/<?= $post->pid ?>">Reply</a>
   <p>
  <?php endforeach ?>
 
@@ -43,9 +56,9 @@ function viewtopic ($tid){
  <?php
 }
 function getpost ($pid){
- $url="http://xbmc/bbs/api/post/$pid";
+ $url=$httproot . "/api/post/$pid";
  $response=json_decode(file_get_contents($url));
- header("Location: http://xbmc/bbs/ui/topic/" . $response->tid . "#" . $response->pid);
+ header("Location: $httproot/ui/topic/" . $response->tid . "#" . $response->pid);
 }
 
 $router = new RegexRouter(array(
@@ -65,14 +78,14 @@ $router = new RegexRouter(array(
  ));
 
 function replytotopic ($tid){
- $url="http://xbmc/bbs/api/topic/$tid";
+ $url=$httproot . "/api/topic/$tid";
  $response=curlstuff($url);
- header ("Location: /bbs/redir.php?url=http://xbmc/bbs/ui/topic/$tid%23$response->pid");
+ header ("Location: /bbs/redir.php?url=$httproot/ui/topic/$tid%23$response->pid");
 }
 function newtopic($fid){
- $url="http://xbmc/bbs/api/forum/$fid";
+ $url=$httproot . "/api/forum/$fid";
  $response=curlstuff($url);
- header ("Location: /bbs/redir.php?url=http://xbmc/bbs/ui/topic/$response->topic_id");
+ header ("Location: /bbs/redir.php?url=$httproot/ui/topic/$response->topic_id");
  //print "redirecting to http://xbmc/bbs/ui/topic/$response->topic_id";
 }
 
@@ -87,18 +100,6 @@ message<input type="text" name="message"><br>
 </form>
 
  <?php 
-}
-function viewforum ($fid){
- $topics=json_decode(file_get_contents("http://xbmc/bbs/api/forum/$fid"));
- if (isset($topics->error)){
-  exit($topics->error);
- }
- print "<a href='/bbs/ui/topic/form/$fid'>new topic</a><p>";
- print "<h1>Topics</h1>\n";
- foreach ($topics as $topic){
-  print "<h4>$topic->subject</h4>\n";
-  print "<h4>by: $topic->poster</h4>\n";
- }
 }
 #$jsonobj=json_decode(file_get_contents("php://input"));
 $router->execute($_SERVER['REQUEST_URI']);
