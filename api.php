@@ -3,7 +3,15 @@ ini_set('display_errors','on');
 ini_set('error_reporting',E_ALL);
 
 function replytopost ($pid){
- global $jsonobj;
+ global $jsonobj,$db;
+ $sql="select topic_id as tid from ci_posts where id=$pid";
+ list($tid)=$db->query($sql)->fetch_row();
+ $sql="insert into ci_posts (topic_id,message,replyto) values (?,?,?)";
+ $sth=$db->prepare($sql);
+ $sth->bind_param("isi",$tid,$jsonobj->message,$pid);
+ $sth->execute();
+ $jsonobj->pid=$db->insert_id;
+ $jsonobj->tid=$tid;
  exit(json_encode($jsonobj));
 }
 

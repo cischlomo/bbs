@@ -5,10 +5,10 @@ require_once("lib/RegexRouter.php");
 
 function replytopost ($pid){
  print "reply to post $pid<p>";
- //print "message: " . $_REQUEST['message'];
  $url="http://xbmc/bbs/api/post/$pid";
  $response=curlstuff($url);
- exit(print_r($response,1));
+ getpost($response->pid);
+ //exit(print_r($response,1));
 }
 
 function replypostform ($pid){
@@ -31,7 +31,7 @@ function viewtopic ($tid){
  <p>
  <?php foreach ($resp->posts as $post) : ?>
   <a name="#<?= $post->pid ?>"></a>
-  <?= $post->message ?><a href="http://xbmc/bbs/ui/post/reply/<?= $post->pid ?>">Reply</a>
+  <?= $post->message ?><a href="http://xbmc/bbs/ui/post/reply/form/<?= $post->pid ?>">Reply</a>
   <p>
  <?php endforeach ?>
 
