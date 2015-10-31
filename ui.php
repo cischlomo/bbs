@@ -3,9 +3,32 @@ ini_set('display_errors','on');
 ini_set('error_reporting',E_ALL);
 require_once("lib/RegexRouter.php");
 
+function viewtopic ($tid){
+ global $jsonobj;
+ $url="http://xbmc/bbs/api/topic/$tid";
+ $resp=json_decode(file_get_contents($url));
+ if (isset($resp->error)){
+  exit($resp->error);
+ }
+ ?>
+ <h1>Topic: <?= $resp->subject ?></h1>
+ <p>
+ <?php foreach ($resp->posts as $post) : ?>
+  <a name="#<?= $post->pid ?>"></a>
+  <?=$post->message?><p>
+ <?php endforeach ?>
+
+<h1>Reply</h1>
+<form action="/bbs/ui/topic/<?=$tid?>" method="POST">
+<textarea name="message"></textarea>
+<input type="submit">
+</form>
+ <?php
+}
 function getpost ($pid){
  global $jsonobj;
  $url="http://xbmc/bbs/api/post/$pid";
+//exit($response->pid);
  $response=json_decode(file_get_contents($url));
  header("Location: http://xbmc/bbs/ui/topic/" . $response->tid . "#" . $response->pid);
  //viewtopic($response->tid);
@@ -30,25 +53,6 @@ function replytotopic ($tid){
  $url="http://xbmc/bbs/api/topic/$tid";
  $response=curlstuff($url);
  header ("Location: /bbs/redir.php?url=http://xbmc/bbs/ui/topic/$tid%23$response->pid");
-}
-function viewtopic ($tid){
- global $jsonobj;
- $url="http://xbmc/bbs/api/topic/$tid";
- $resp=json_decode(file_get_contents($url));
- ?>
- <h1>Topic: <?=$resp->subject?></h1>
- <p>
- <?php foreach ($resp->posts as $post) : ?>
-  <a name="#<?= $post->pid ?>"></a>
-  <?=$post->message?><p>
- <?php endforeach ?>
-
-<h1>Reply</h1>
-<form action="/bbs/ui/topic/<?=$tid?>" method="POST">
-<textarea name="message"></textarea>
-<input type="submit">
-</form>
- <?php
 }
 function newtopic($fid){
  $url="http://xbmc/bbs/api/forum/$fid";

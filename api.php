@@ -1,6 +1,33 @@
 <?php
 ini_set('display_errors','on');
 ini_set('error_reporting',E_ALL);
+
+function viewtopic ($tid){
+ global $jsonobj,$db;
+ $sql="select subject from ci_topics where id=$tid";
+ $result=$db->query($sql) or die ($db->error);
+ list($subject)=$result->fetch_row();
+ if($subject===NULL) {
+  exit(json_encode(array("error"=>"no such topic")));
+ }
+ $sql="select id as tid,message,replyto,id as pid from ci_posts where topic_id=$tid";
+ $resp=$db->query($sql)->fetch_all(MYSQLI_ASSOC);
+ exit(json_encode(array("tid"=>$tid,"subject"=>$subject,"posts"=>$resp)));
+}
+
+function getpost ($pid){
+ global $jsonobj,$db;
+ $sql="select * from ci_posts where id=$pid";
+ $resp=$db->query($sql)->fetch_assoc();
+ if ($resp['id'] > 0){
+  //viewtopic($tid);
+  $resp['tid']=$resp['topic_id'];
+  $resp['pid']=$pid;
+  exit(json_encode($resp));
+ } else {
+  exit(json_encode(array("error"=>"post is not contained by a topic")));
+ }
+}
 require_once('lib/RegexRouter.php');
 $db=new Mysqli("localhost","root");
 $db->select_db("campidiot");
@@ -18,26 +45,6 @@ $router = new RegexRouter(array(
   "post"=>"replytopost")
  ));
  
-function getpost ($pid){
- global $jsonobj,$db;
- $sql="select topic_id from ci_posts where id=$pid";
- list($tid)=($db->query($sql))->fetch_row();
- if ($tid>0){
-  //viewtopic($tid);
-  exit(json_encode(array("tid"=>$tid,"pid"=>$pid)));
- } else {
-  exit(json_encode(array("error"=>"post is not contained by a topic")));
- }
-}
-function viewtopic ($tid){
- global $jsonobj,$db;
- $sql="select subject from ci_topics where id=$tid";
- list($subject)=$db->query($sql)->fetch_row() or die ($db->error);
- $sql="select id,message,replyto,id as pid from ci_posts where topic_id=$tid";
- $resp=$db->query($sql)->fetch_all(MYSQLI_ASSOC);
- $output=array("tid"=>$tid,"subject"=>$subject,"posts"=>$resp);
- exit(json_encode($output));
-}
 
 function replytotopic ($tid){
  global $jsonobj,$db;
