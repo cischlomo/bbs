@@ -3,10 +3,10 @@ function viewtopic ($tid){
  global $jsonobj;
  $resp=json_decode(file_get_contents("http://xbmc/bbs/api/topic/$tid"));
  ?>
- <h1>Topic: <?=$resp[0]->topic?></h1>
+ <h1>Topic: <?=$resp->subject?></h1>
  <p>
- <?php foreach ($resp as $r) : ?>
-  <?=$r->message?><p>
+ <?php foreach ($resp->posts as $post) : ?>
+  <?=$post->message?><p>
  <?php endforeach ?>
  <?php
 }
