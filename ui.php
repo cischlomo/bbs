@@ -3,8 +3,21 @@ ini_set('display_errors','on');
 ini_set('error_reporting',E_ALL);
 require_once("lib/RegexRouter.php");
 
+function replytopost ($pid){
+ print "reply to post $pid<p>";
+ print "message: " . $_REQUEST['message'];
+}
+
+function replypostform ($pid){
+ ?>
+ <h1>Reply to post</h1>
+ <form action="/bbs/ui/post/<?=$pid?>" method="POST">
+  message<input type="text" name="message"><br>
+  <input type="submit">
+ </form>
+ <?php
+}
 function viewtopic ($tid){
- global $jsonobj;
  $url="http://xbmc/bbs/api/topic/$tid";
  $resp=json_decode(file_get_contents($url));
  if (isset($resp->error)){
@@ -15,7 +28,8 @@ function viewtopic ($tid){
  <p>
  <?php foreach ($resp->posts as $post) : ?>
   <a name="#<?= $post->pid ?>"></a>
-  <?=$post->message?><p>
+  <?= $post->message ?><a href="http://xbmc/bbs/ui/post/reply/<?= $post->pid ?>">Reply</a>
+  <p>
  <?php endforeach ?>
 
 <h1>Reply</h1>
@@ -26,7 +40,6 @@ function viewtopic ($tid){
  <?php
 }
 function getpost ($pid){
- global $jsonobj;
  $url="http://xbmc/bbs/api/post/$pid";
  $response=json_decode(file_get_contents($url));
  header("Location: http://xbmc/bbs/ui/topic/" . $response->tid . "#" . $response->pid);
@@ -38,6 +51,7 @@ $router = new RegexRouter(array(
   "forum"=>"viewforum",
   "topic"=>"viewtopic",
   "post"=>"getpost",
+  "post\/reply\/form"=>"replypostform",
   "nt"=>"newtopicform",
   ),
  "post"=>array(
@@ -79,12 +93,6 @@ function viewforum ($fid){
   print "<h4>by: $topic->poster</h4>\n";
  }
 }
-function replytopost ($pid){
- global $jsonobj;
- print "reply to post $pid<p>";
- print "message: " . $jsonobj->message;
-}
-
 #$jsonobj=json_decode(file_get_contents("php://input"));
 $router->execute($_SERVER['REQUEST_URI']);
 
