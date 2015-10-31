@@ -23,7 +23,8 @@ function getpost ($pid){
  $sql="select topic_id from ci_posts where id=$pid";
  list($tid)=($db->query($sql))->fetch_row();
  if ($tid>0){
-  viewtopic($tid);
+  //viewtopic($tid);
+  exit(json_encode(array("tid"=>$tid,"pid"=>$pid)));
  } else {
   exit(json_encode(array("error"=>"post is not contained by a topic")));
  }

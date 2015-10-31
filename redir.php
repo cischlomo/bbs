@@ -1,1 +1,4 @@
-Thank you. redirecting to <?= $_GET['url'] ?>
+<?php
+header("Location: " . $_GET['url'] );
+
+?>

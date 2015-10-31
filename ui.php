@@ -1,7 +1,16 @@
 <?php
-require_once("lib/RegexRouter.php");
 ini_set('display_errors','on');
 ini_set('error_reporting',E_ALL);
+require_once("lib/RegexRouter.php");
+
+function getpost ($pid){
+ global $jsonobj;
+ $url="http://xbmc/bbs/api/post/$pid";
+ $response=json_decode(file_get_contents($url));
+ header("Location: http://xbmc/bbs/ui/topic/" . $response->tid . "#" . $response->pid);
+ //viewtopic($response->tid);
+}
+
 $router = new RegexRouter(array(
  "prefix"=>"/^\/bbs\/ui",
  "get"=>array(
@@ -17,14 +26,6 @@ $router = new RegexRouter(array(
   )
  ));
 
-function getpost ($pid){
- global $jsonobj;
- $url="http://xbmc/bbs/api/post/$pid";
- exit(file_get_contents($url));
- $response=json_decode(file_get_contents($url));
- 
-}
-
 function replytotopic ($tid){
  $url="http://xbmc/bbs/api/topic/$tid";
  $response=curlstuff($url);
@@ -32,7 +33,8 @@ function replytotopic ($tid){
 }
 function viewtopic ($tid){
  global $jsonobj;
- $resp=json_decode(file_get_contents("http://xbmc/bbs/api/topic/$tid"));
+ $url="http://xbmc/bbs/api/topic/$tid";
+ $resp=json_decode(file_get_contents($url));
  ?>
  <h1>Topic: <?=$resp->subject?></h1>
  <p>
@@ -53,22 +55,6 @@ function newtopic($fid){
  header ("Location: /bbs/redir.php?url=http://xbmc/bbs/ui/topic/$response->topic_id");
  //print "redirecting to http://xbmc/bbs/ui/topic/$response->topic_id";
 }
-function curlstuff($url){
-//error_log(print_r($_REQUEST,1));
- $curlopts= array( 
-        CURLOPT_POST => 1, 
-        CURLOPT_HEADER => 0, 
-	CURLOPT_RETURNTRANSFER => 1,
-        CURLOPT_URL => $url,
-        CURLOPT_POSTFIELDS => json_encode($_REQUEST),
-	CURLOPT_COOKIE=> $_SERVER['HTTP_COOKIE']
-
- );
- $ch = curl_init();
- curl_setopt_array($ch,$curlopts);
- return json_decode(curl_exec($ch));
-}
-
 
  
 function newtopicform ($fid) {
@@ -98,6 +84,21 @@ function replytopost ($pid){
 
 #$jsonobj=json_decode(file_get_contents("php://input"));
 $router->execute($_SERVER['REQUEST_URI']);
+
+function curlstuff($url){
+ $curlopts= array( 
+        CURLOPT_POST => 1, 
+        CURLOPT_HEADER => 0, 
+	CURLOPT_RETURNTRANSFER => 1,
+        CURLOPT_URL => $url,
+        CURLOPT_POSTFIELDS => json_encode($_REQUEST),
+	CURLOPT_COOKIE=> $_SERVER['HTTP_COOKIE']
+
+ );
+ $ch = curl_init();
+ curl_setopt_array($ch,$curlopts);
+ return json_decode(curl_exec($ch));
+}
 
 
 ?>
