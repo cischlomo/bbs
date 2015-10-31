@@ -13,7 +13,6 @@ class RegexRouter {
     }
     
     public function execute($uri) {
-//exit($uri);
         foreach (
           ($_SERVER['REQUEST_METHOD']==='POST' ? $this->postroutes : $this->getroutes)
             as $pattern => $callback) {
@@ -21,7 +20,10 @@ class RegexRouter {
                 array_shift($params);
                 return call_user_func_array($callback, array_values($params));
             }
-        }
+          }
+          if(empty($getroutes) && empty($postroutes)){
+           exit("invalid url");
+          }
     }
 } 
 ?>
