@@ -2,6 +2,11 @@
 ini_set('display_errors','on');
 ini_set('error_reporting',E_ALL);
 
+function replytopost ($pid){
+ global $jsonobj;
+ exit(json_encode($jsonobj));
+}
+
 function viewtopic ($tid){
  global $jsonobj,$db;
  $sql="select subject from ci_topics where id=$tid";
@@ -77,12 +82,6 @@ function viewforum ($fid){
  $sql="select * from ci_topics where forum_id=$fid";
  exit(json_encode(($db->query($sql))->fetch_all(MYSQLI_ASSOC)));
 }
-function replytopost ($pid){
- global $jsonobj;
- print "reply to post $pid<p>";
- print "message: " . $jsonobj->message;
-}
-
 //exit(file_get_contents("php://input"));
 $jsonobj=json_decode(file_get_contents("php://input"));
 //exit(print_r($jsonobj,1));

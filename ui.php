@@ -5,7 +5,10 @@ require_once("lib/RegexRouter.php");
 
 function replytopost ($pid){
  print "reply to post $pid<p>";
- print "message: " . $_REQUEST['message'];
+ //print "message: " . $_REQUEST['message'];
+ $url="http://xbmc/bbs/api/post/$pid";
+ $response=curlstuff($url);
+ exit(print_r($response,1));
 }
 
 function replypostform ($pid){
