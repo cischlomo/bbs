@@ -87,6 +87,10 @@ function newtopic($fid){
 }
 function viewforum ($fid){
  global $jsonobj, $db;
+ $sql="select id from ci_forums where id=$fid";
+ if ($db->query($sql)->num_rows==0) {
+  exit(json_encode(array("error"=>"no such forum")));
+ }
  $sql="select * from ci_topics where forum_id=$fid";
  exit(json_encode(($db->query($sql))->fetch_all(MYSQLI_ASSOC)));
 }

@@ -90,6 +90,9 @@ message<input type="text" name="message"><br>
 }
 function viewforum ($fid){
  $topics=json_decode(file_get_contents("http://xbmc/bbs/api/forum/$fid"));
+ if (isset($topics->error)){
+  exit($topics->error);
+ }
  print "<a href='/bbs/ui/topic/form/$fid'>new topic</a><p>";
  print "<h1>Topics</h1>\n";
  foreach ($topics as $topic){
