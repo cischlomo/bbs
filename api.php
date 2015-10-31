@@ -2,6 +2,27 @@
 require_once("config.php");
 require_once('lib/RegexRouter.php');
 
+$db=new Mysqli("localhost","root");
+$db->select_db("campidiot");
+
+//this section maps url pattern to function, so e.g. /bbs/api/forum/1 calls "viewforum(1)"
+$router = new RegexRouter(array(
+ "prefix"=>"/^\/bbs\/api",
+ "get"=>array(
+  "forum"=>"viewforum",
+  "topic"=>"viewtopic",
+  "post"=>"getpost",
+  "nt"=>"newtopicform",
+  ),
+ "post"=>array(
+  "forum"=>"newtopic",
+  "topic"=>"replytotopic",
+  "post"=>"replytopost")
+ ));
+$jsonobj=json_decode(file_get_contents("php://input"));
+$router->execute($_SERVER['REQUEST_URI']);
+ 
+/******* and these are all the functions that are mapped to distinct url patterns *********/
 function replytopost ($pid){
  global $jsonobj,$db;
  $sql="select topic_id as tid from ci_posts where id=$pid";
@@ -41,23 +62,6 @@ function getpost ($pid){
   exit(json_encode(array("error"=>"no such post")));
  }
 }
-$db=new Mysqli("localhost","root");
-$db->select_db("campidiot");
-$router = new RegexRouter(array(
- "prefix"=>"/^\/bbs\/api",
- "get"=>array(
-  "forum"=>"viewforum",
-  "topic"=>"viewtopic",
-  "post"=>"getpost",
-  "nt"=>"newtopicform",
-  ),
- "post"=>array(
-  "forum"=>"newtopic",
-  "topic"=>"replytotopic",
-  "post"=>"replytopost")
- ));
- 
-
 function replytotopic ($tid){
  global $jsonobj,$db;
  $sql="insert into ci_posts (topic_id,message) values (?,?)";
@@ -93,8 +97,6 @@ function viewforum ($fid){
  $sql="select * from ci_topics where forum_id=$fid";
  exit(json_encode(($db->query($sql))->fetch_all(MYSQLI_ASSOC)));
 }
-$jsonobj=json_decode(file_get_contents("php://input"));
-$router->execute($_SERVER['REQUEST_URI']);
 
 
 ?>

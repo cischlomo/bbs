@@ -2,6 +2,25 @@
 require_once("config.php");
 require_once("lib/RegexRouter.php");
 
+//this section maps url pattern to function, so e.g. /bbs/api/forum/1 calls "viewforum(1)"
+$router = new RegexRouter(array(
+ "prefix"=>"/^\/bbs\/ui",
+ "get"=>array(
+  "forum"=>"viewforum",
+  "topic"=>"viewtopic",
+  "post"=>"getpost",
+  "post\/reply\/form"=>"replypostform",
+  "topic\/form"=>"newtopicform",
+  ),
+ "post"=>array(
+  "forum"=>"newtopic",
+  "topic"=>"replytotopic",
+  "post"=>"replytopost"
+  )
+ ));
+$router->execute($_SERVER['REQUEST_URI']);
+
+/******* and these are all the functions that are mapped to distinct url patterns *********/
 function viewforum ($fid){
  global $httproot;
  $topics=json_decode(file_get_contents($httproot . "/api/forum/$fid"));
@@ -66,22 +85,6 @@ function getpost ($pid){
  header("Location: $httproot/ui/topic/" . $response->tid . "#" . $response->pid);
 }
 
-$router = new RegexRouter(array(
- "prefix"=>"/^\/bbs\/ui",
- "get"=>array(
-  "forum"=>"viewforum",
-  "topic"=>"viewtopic",
-  "post"=>"getpost",
-  "post\/reply\/form"=>"replypostform",
-  "topic\/form"=>"newtopicform",
-  ),
- "post"=>array(
-  "forum"=>"newtopic",
-  "topic"=>"replytotopic",
-  "post"=>"replytopost"
-  )
- ));
-
 function replytotopic ($tid){
  global $httproot;
  $url=$httproot . "/api/topic/$tid";
@@ -107,9 +110,8 @@ message<input type="text" name="message"><br>
 
  <?php 
 }
-#$jsonobj=json_decode(file_get_contents("php://input"));
-$router->execute($_SERVER['REQUEST_URI']);
 
+/*** curlstuff isn't mapped to a url its just a utility function to call the api with *****/
 function curlstuff($url){
  $curlopts= array( 
         CURLOPT_POST => 1, 
