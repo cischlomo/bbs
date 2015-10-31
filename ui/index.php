@@ -12,7 +12,6 @@ function viewtopic ($tid){
 }
 function newtopic($fid){
  $url="http://xbmc/bbs/api/forum/$fid";
- //$url="http://xbmc/p.php";
  $curlopts= array( 
         CURLOPT_POST => 1, 
         CURLOPT_HEADER => 0, 
