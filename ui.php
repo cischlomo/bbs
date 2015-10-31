@@ -1,4 +1,12 @@
 <?php
+function getpost ($pid){
+ global $jsonobj;
+ $url="http://xbmc/bbs/api/post/$pid";
+ exit(file_get_contents($url));
+ $response=json_decode(file_get_contents($url));
+ 
+}
+
 function replytotopic ($tid){
  $url="http://xbmc/bbs/api/topic/$tid";
  $response=curlstuff($url);
@@ -78,11 +86,6 @@ function viewforum ($fid){
   print "<h4>by: $topic->poster</h4>\n";
  }
 }
-function getpost ($pid){
- global $jsonobj;
- print "read post# $pid";
-}
-
 function replytopost ($pid){
  global $jsonobj;
  print "reply to post $pid<p>";
