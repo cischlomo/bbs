@@ -3,7 +3,8 @@ function replytotopic ($tid){
  print "reply to topic $tid<p>";
  $url="http://xbmc/bbs/api/topic/$tid";
  $response=curlstuff($url);
- exit(json_encode($response));
+ print(json_encode($response));
+ exit("redirecting to http://xbmc/bbs/ui/topic/$tid");
 }
 function viewtopic ($tid){
  global $jsonobj;

@@ -1,6 +1,13 @@
 <?php
 function replytotopic ($tid){
- global $jsonobj;
+ global $jsonobj,$m;
+ $sql="insert into ci_posts (topic_id,message) values (?,?)";
+ $sth=$m->prepare($sql);
+ $sth->bind_param("is",$tid,$jsonobj->message);
+ $sth->execute();
+ $pid=$m->insert_id;
+ $jsonobj->pid=$pid;
+ $jsonobj->tid=$tid;
  exit(json_encode($jsonobj,1));
 }
 function viewtopic ($tid){
