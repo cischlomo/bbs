@@ -55,7 +55,7 @@ $router = new RegexRouter(array(
   "topic"=>"viewtopic",
   "post"=>"getpost",
   "post\/reply\/form"=>"replypostform",
-  "nt"=>"newtopicform",
+  "topic\/form"=>"newtopicform",
   ),
  "post"=>array(
   "forum"=>"newtopic",
@@ -90,6 +90,7 @@ message<input type="text" name="message"><br>
 }
 function viewforum ($fid){
  $topics=json_decode(file_get_contents("http://xbmc/bbs/api/forum/$fid"));
+ print "<a href='/bbs/ui/topic/form/$fid'>new topic</a><p>";
  print "<h1>Topics</h1>\n";
  foreach ($topics as $topic){
   print "<h4>$topic->subject</h4>\n";
