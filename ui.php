@@ -60,6 +60,9 @@ function getpost ($pid){
  global $httproot;
  $url=$httproot . "/api/post/$pid";
  $response=json_decode(file_get_contents($url));
+ if (isset($response->error)){
+  exit($response->error);
+ }
  header("Location: $httproot/ui/topic/" . $response->tid . "#" . $response->pid);
 }
 
