@@ -13,6 +13,7 @@ class RegexRouter {
     }
     
     public function execute($uri) {
+//exit($uri);
         foreach (
           ($_SERVER['REQUEST_METHOD']==='POST' ? $this->postroutes : $this->getroutes)
             as $pattern => $callback) {
