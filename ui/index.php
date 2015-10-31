@@ -1,7 +1,14 @@
 <?php
 function viewtopic ($tid){
  global $jsonobj;
- print_r(file_get_contents("http://xbmc/bbs/api/topic/$tid"));
+ $resp=json_decode(file_get_contents("http://xbmc/bbs/api/topic/$tid"));
+ ?>
+ <h1>Topic: <?=$resp[0]->topic?></h1>
+ <p>
+ <?php foreach ($resp as $r) : ?>
+  <?=$r->message?><p>
+ <?php endforeach ?>
+ <?php
 }
 function newtopic($fid){
  $url="http://xbmc/bbs/api/forum/$fid";

@@ -1,8 +1,8 @@
 <?php
 function viewtopic ($tid){
  global $jsonobj,$m;
- $sql="select t.id,p.id from ci_posts as p left join ci_topics as t on t.id=p.topic_id where t.id=$tid group by t.id, p.id";
- exit(json_encode(($m->query($sql))->fetch_all(MYSQLI_ASSOC)));
+ $sql="select t.subject as topic, p.id as pid, p.message as message from ci_posts as p left join ci_topics as t on t.id=p.topic_id where t.id=$tid group by t.id, p.id";
+ exit(json_encode($m->query($sql)->fetch_all(MYSQLI_ASSOC)));
 }
 function newtopic($fid){
  global $jsonobj,$m;
