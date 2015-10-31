@@ -1,5 +1,7 @@
 <?php
 ini_set('error_reporting',E_ALL);
+$m=new Mysqli("localhost","root");
+$m->select_db("campidiot");
 $router = new RegexRouter();
 
 $router->get( '/^\/bbs\/forum\/([0-9]+)\/?$/',  "viewforum");
@@ -11,8 +13,9 @@ $router->post( '/^\/bbs\/topic\/([0-9]+)\/?$/', "replytotopic");
 $router->post( '/^\/bbs\/post\/([0-9]+)\/?$/',  "replytopost");
  
 function viewforum ($fid){
- global $jsonobj;
-
+ global $jsonobj, $m;
+ $sql="select * from ci_forums where id=$fid";
+ exit(json_encode(($m->query($sql))->fetch_all(MYSQLI_ASSOC)));
 }
 function viewtopic ($fid){
  global $jsonobj;
