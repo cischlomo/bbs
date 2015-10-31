@@ -2,7 +2,7 @@
 function replytotopic ($tid){
  $url="http://xbmc/bbs/api/topic/$tid";
  $response=curlstuff($url);
- header ("Location: /bbs/redir.php?url=http://xbmc/bbs/ui/topic/$tid");
+ header ("Location: /bbs/redir.php?url=http://xbmc/bbs/ui/topic/$tid%23$response->pid");
 }
 function viewtopic ($tid){
  global $jsonobj;
@@ -24,7 +24,8 @@ function viewtopic ($tid){
 function newtopic($fid){
  $url="http://xbmc/bbs/api/forum/$fid";
  $response=curlstuff($url);
- print "redirecting to http://xbmc/bbs/ui/topic/$response->topic_id";
+ header ("Location: /bbs/redir.php?url=http://xbmc/bbs/ui/topic/$response->topic_id");
+ //print "redirecting to http://xbmc/bbs/ui/topic/$response->topic_id";
 }
 function curlstuff($url){
 //error_log(print_r($_REQUEST,1));
