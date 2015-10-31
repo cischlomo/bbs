@@ -28,10 +28,8 @@ function viewtopic ($tid){
 function getpost ($pid){
  global $jsonobj;
  $url="http://xbmc/bbs/api/post/$pid";
-//exit($response->pid);
  $response=json_decode(file_get_contents($url));
  header("Location: http://xbmc/bbs/ui/topic/" . $response->tid . "#" . $response->pid);
- //viewtopic($response->tid);
 }
 
 $router = new RegexRouter(array(
