@@ -16,7 +16,7 @@ function viewforum ($fid){
  }
 }
 function replytopost ($pid){
- global $phpself;
+ global $httproot;
  print "reply to post $pid<p>";
  $url= $httproot . "/api/post/$pid";
  $response=curlstuff($url);
@@ -34,6 +34,7 @@ function replypostform ($pid){
  <?php
 }
 function viewtopic ($tid){
+ global $httproot;
  $url=$httproot . "/api/topic/$tid";
  $resp=json_decode(file_get_contents($url));
  if (isset($resp->error)){
@@ -56,6 +57,7 @@ function viewtopic ($tid){
  <?php
 }
 function getpost ($pid){
+ global $httproot;
  $url=$httproot . "/api/post/$pid";
  $response=json_decode(file_get_contents($url));
  header("Location: $httproot/ui/topic/" . $response->tid . "#" . $response->pid);
@@ -78,11 +80,13 @@ $router = new RegexRouter(array(
  ));
 
 function replytotopic ($tid){
+ global $httproot;
  $url=$httproot . "/api/topic/$tid";
  $response=curlstuff($url);
  header ("Location: /bbs/redir.php?url=$httproot/ui/topic/$tid%23$response->pid");
 }
 function newtopic($fid){
+ global $httproot;
  $url=$httproot . "/api/forum/$fid";
  $response=curlstuff($url);
  header ("Location: /bbs/redir.php?url=$httproot/ui/topic/$response->topic_id");
