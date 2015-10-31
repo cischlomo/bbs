@@ -1,6 +1,6 @@
 <?php
-ini_set('display_errors','on');
-ini_set('error_reporting',E_ALL);
+require_once("config.php");
+require_once('lib/RegexRouter.php');
 
 function replytopost ($pid){
  global $jsonobj,$db;
@@ -41,7 +41,6 @@ function getpost ($pid){
   exit(json_encode(array("error"=>"no such post")));
  }
 }
-require_once('lib/RegexRouter.php');
 $db=new Mysqli("localhost","root");
 $db->select_db("campidiot");
 $router = new RegexRouter(array(
