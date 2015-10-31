@@ -6,16 +6,18 @@ function viewtopic ($tid){
 }
 function newtopic($fid){
  global $jsonobj,$m;
- //print "new topic in forum $fid\n";
- //print "topic: " . $jsonobj->topic . "\n";
- //print "message: " . $jsonobj->message. "\n";
  $jsonobj->cookie=$_COOKIE;
  $sql="insert into ci_topics (subject,posted) values (?,?)";
  $sth=$m->prepare($sql) or die($m->error);
  $d=time();
  $sth->bind_param("si",$jsonobj->subject,$d);
  $sth->execute();
- exit(json_encode(array("topic_id"=>$m->insert_id)));
+ $tid=$m->insert_id;
+ $sql="insert into ci_posts (topic_id,message) values (?,?)";
+ $sth=$m->prepare($sql) or die($m->error);
+ $sth->bind_param("is",$tid,$jsonobj->message);
+ $sth->execute();
+ exit(json_encode(array("topic_id"=>$tid)));
 }
 ini_set('display_errors','on');
 ini_set('error_reporting',E_ALL);
