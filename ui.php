@@ -1,6 +1,19 @@
 <?php
 require_once("config.php");
 require_once("lib/RegexRouter.php");
+$user=getuser();
+
+function getuser(){
+ global $httproot, $cookie_name;
+ $url=$httproot . "api/me";
+ if(isset($_COOKIE[$cookie_name])){
+  $_REQUEST=array_merge($_REQUEST,unserialize($_COOKIE[$cookie_name]));
+ }
+ if(!isset($_REQUEST['password_hash']) && isset ($_REQUEST['password'])){
+  $_REQUEST['password_hash']=$_REQUEST['password'];
+ }
+ return curlstuff($url,1); 
+}
 
 //this section maps url pattern to function, so e.g. /bbs/api/forum/1 calls "viewforum(1)"
 $router = new RegexRouter(array(
@@ -11,34 +24,37 @@ $router = new RegexRouter(array(
   "post"=>"getpost",
   "post\/reply\/form"=>"replypostform",
   "topic\/form"=>"newtopicform",
+  "login"=>"login",
+  "logout"=>"logout",
   ),
  "post"=>array(
   "forum"=>"newtopic",
   "topic"=>"replytotopic",
-  "post"=>"replytopost"
+  "post"=>"replytopost",
+  "login"=>"loginpost",
   )
  ));
 $router->execute($_SERVER['REQUEST_URI']);
 
 /******* and these are all the functions that are mapped to distinct url patterns *********/
 function viewforum ($fid){
- global $httproot;
- $topics=json_decode(file_get_contents($httproot . "/api/forum/$fid"));
+ global $httproot, $cookie_name;
+ $topics=curlstuff($httproot . "/api/forum/$fid");
  if (isset($topics->error)){
   exit($topics->error);
  }
  print "<a href='/bbs/ui/topic/form/$fid'>new topic</a><p>";
  print "<h1>Topics</h1>\n";
  foreach ($topics as $topic){
-  print "<h4>$topic->subject</h4>\n";
-  print "<h4>by: $topic->poster</h4>\n";
+  print "<a href=\"/bbs/ui/topic/$topic->id\">$topic->subject</a>\n";
+  print "<h6>by: $topic->poster</h6>\n";
  }
 }
 function replytopost ($pid){
  global $httproot;
  print "reply to post $pid<p>";
  $url= $httproot . "/api/post/$pid";
- $response=curlstuff($url);
+ $response=curlstuff($url,1);
  getpost($response->pid);
  //exit(print_r($response,1));
 }
@@ -55,7 +71,7 @@ function replypostform ($pid){
 function viewtopic ($tid){
  global $httproot;
  $url=$httproot . "/api/topic/$tid";
- $resp=json_decode(file_get_contents($url));
+ $resp=curlstuff($url);
  if (isset($resp->error)){
   exit($resp->error);
  }
@@ -78,7 +94,7 @@ function viewtopic ($tid){
 function getpost ($pid){
  global $httproot;
  $url=$httproot . "/api/post/$pid";
- $response=json_decode(file_get_contents($url));
+ $response=curlstuff($url);
  if (isset($response->error)){
   exit($response->error);
  }
@@ -88,7 +104,7 @@ function getpost ($pid){
 function replytotopic ($tid){
  global $httproot;
  $url=$httproot . "/api/topic/$tid";
- $response=curlstuff($url);
+ $response=curlstuff($url,1);
  header ("Location: /bbs/redir.php?url=$httproot/ui/topic/$tid%23$response->pid");
 }
 function newtopic($fid){
@@ -111,20 +127,65 @@ message<input type="text" name="message"><br>
  <?php 
 }
 
+function login () {
+ global $user;
+ if($user->id>1){
+  exit("you have to logout first");
+ }
+ ?>
+ <form action="/bbs/ui/login" method="post">
+ username <input name="username"><br>
+ password <input name="password" type="password">
+ <input type="submit">
+ </form>
+ <?php
+}
+function loginpost () {
+ global $httproot,$cookie_name;
+ $requested_user=$_REQUEST['username'];
+ $user=getuser();
+ error_log("comparing " . $user->username . " with $requested_user");
+ if (isset($user->username)) {
+  if ($user->username !== $requested_user){
+   exit ("login failed");
+  }
+ } else {
+  exit ("login failed");
+ }
+
+ setcookie($cookie_name,serialize(
+  array("username"=>$user->username,
+        "password_hash"=>$user->password)
+  ),0,"/");
+ exit ("hello " . $user->username);
+}
+
+function logout () {
+ global $cookie_name;
+ setcookie($cookie_name, null, -1, '/');
+ exit ("you are logged out");
+}
+
 /*** curlstuff isn't mapped to a url its just a utility function to call the api with *****/
-function curlstuff($url){
+function curlstuff($url, $post=0){
  $curlopts= array( 
-        CURLOPT_POST => 1, 
+	CURLOPT_SSL_VERIFYPEER => 0,
         CURLOPT_HEADER => 0, 
 	CURLOPT_RETURNTRANSFER => 1,
-        CURLOPT_URL => $url,
-        CURLOPT_POSTFIELDS => json_encode($_REQUEST),
-	CURLOPT_COOKIE=> $_SERVER['HTTP_COOKIE']
-
+        CURLOPT_URL => $url
  );
+ if ($post>0){
+  $curlopts[CURLOPT_POST] = 1;
+  if (isset($_REQUEST)){
+   $curlopts[CURLOPT_POSTFIELDS] = json_encode($_REQUEST);
+  }
+ }
  $ch = curl_init();
  curl_setopt_array($ch,$curlopts);
- return json_decode(curl_exec($ch));
+ $output= json_decode(curl_exec($ch));
+ //error_log(curl_error($ch));
+ curl_close($ch);
+ return $output;
 }
 
 

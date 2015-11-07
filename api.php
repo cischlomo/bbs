@@ -1,7 +1,7 @@
 <?php
 require_once("config.php");
 require_once('lib/RegexRouter.php');
-
+$jsonobj=json_decode(file_get_contents("php://input"));
 $db=new Mysqli("localhost","root");
 $db->select_db("campidiot");
 
@@ -13,13 +13,15 @@ $router = new RegexRouter(array(
   "topic"=>"viewtopic",
   "post"=>"getpost",
   "nt"=>"newtopicform",
+  "login"=>"login",
   ),
  "post"=>array(
+  "me"=>"get_me",
   "forum"=>"newtopic",
   "topic"=>"replytotopic",
-  "post"=>"replytopost")
+  "post"=>"replytopost",
+ )
  ));
-$jsonobj=json_decode(file_get_contents("php://input"));
 $router->execute($_SERVER['REQUEST_URI']);
  
 /******* and these are all the functions that are mapped to distinct url patterns *********/
@@ -96,6 +98,25 @@ function viewforum ($fid){
  }
  $sql="select * from ci_topics where forum_id=$fid";
  exit(json_encode(($db->query($sql))->fetch_all(MYSQLI_ASSOC)));
+}
+
+function get_me() {
+ global $jsonobj, $db;
+ $sql="select * from ci_users where username=? and password=?";
+ $sth=$db->prepare($sql);
+ if (isset($jsonobj->username) && isset($jsonobj->password_hash)) {
+  $u=$jsonobj->username;
+  $p=$jsonobj->password_hash;
+  $sth->bind_param("is",$u,$p);
+  $sth->execute();
+  $result = $sth->get_result();
+  if($result->num_rows) {
+   $user=$result->fetch_assoc();
+   exit(json_encode($user));
+  }
+ }
+ $sql="select * from ci_users where id=1";
+ exit(json_encode(($db->query($sql))->fetch_array(MYSQLI_ASSOC)));
 }
 
 

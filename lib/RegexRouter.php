@@ -14,10 +14,12 @@ class RegexRouter {
     function __construct($arg){
      $prefix=$arg['prefix'];
      foreach ($arg['get'] as $k=>$v){
-       $this->get($prefix . "\/" . $k . "\/([0-9]+)\/?$/",$v);
+       $this->get($prefix . "\/" . $k . "\/([0-9]+)\/?$/",$v) || //with arg
+       $this->get($prefix . "\/" . $k . "\/?$/",$v); //or without
      }
      foreach ($arg['post'] as $k=>$v){
-       $this->post($prefix . "\/" . $k . "\/([0-9]+)\/?$/",$v);
+       $this->post($prefix . "\/" . $k . "\/([0-9]+)\/?$/",$v) || //with arg
+       $this->post($prefix . "\/" . $k . "\/?$/",$v); //or without
      }
      //header("Content-type: text/plain");exit(print_r(get_object_vars($this),1));
 
