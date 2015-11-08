@@ -5,14 +5,15 @@ $user=getuser();
 
 function getuser(){
  global $httproot, $cookie_name;
- $url=$httproot . "api/me";
+ $url=$httproot . "/api/me";
  if(isset($_COOKIE[$cookie_name])){
   $_REQUEST=array_merge($_REQUEST,unserialize($_COOKIE[$cookie_name]));
  }
  if(!isset($_REQUEST['password_hash']) && isset ($_REQUEST['password'])){
   $_REQUEST['password_hash']=$_REQUEST['password'];
  }
- return curlstuff($url,1); 
+ $qs="username=" . urlencode($_REQUEST['username']) . "&password_hash=" . urlencode($_REQUEST['password_hash']);
+ return curlstuff($url . "?" . $qs); 
 }
 
 //this section maps url pattern to function, so e.g. /bbs/api/forum/1 calls "viewforum(1)"
@@ -38,11 +39,12 @@ $router->execute($_SERVER['REQUEST_URI']);
 
 /******* and these are all the functions that are mapped to distinct url patterns *********/
 function viewforum ($fid){
- global $httproot, $cookie_name;
+ global $httproot, $cookie_name, $user;
  $topics=curlstuff($httproot . "/api/forum/$fid");
  if (isset($topics->error)){
   exit($topics->error);
  }
+ print "hello, $user->username<p>";
  print "<a href='/bbs/ui/topic/form/$fid'>new topic</a><p>";
  print "<h1>Topics</h1>\n";
  foreach ($topics as $topic){
@@ -110,7 +112,7 @@ function replytotopic ($tid){
 function newtopic($fid){
  global $httproot;
  $url=$httproot . "/api/forum/$fid";
- $response=curlstuff($url);
+ $response=curlstuff($url,1);
  header ("Location: /bbs/redir.php?url=$httproot/ui/topic/$response->topic_id");
 }
 
@@ -142,7 +144,7 @@ function login () {
 }
 function loginpost () {
  global $httproot,$cookie_name;
- $requested_user=$_REQUEST['username'];
+ $requested_user=urldecode($_REQUEST['username']);
  $user=getuser();
  error_log("comparing " . $user->username . " with $requested_user");
  if (isset($user->username)) {

@@ -14,9 +14,9 @@ $router = new RegexRouter(array(
   "post"=>"getpost",
   "nt"=>"newtopicform",
   "login"=>"login",
+  "me"=>"me_helper",
   ),
  "post"=>array(
-  "me"=>"get_me",
   "forum"=>"newtopic",
   "topic"=>"replytotopic",
   "post"=>"replytopost",
@@ -77,6 +77,8 @@ function replytotopic ($tid){
 }
 function newtopic($fid){
  global $jsonobj,$db;
+ $user=me();
+ error_log("user " . print_r($user,1));
  $jsonobj->cookie=$_COOKIE;
  $sql="insert into ci_topics (subject,posted,forum_id) values (?,?,?)";
  $sth=$db->prepare($sql) or die($db->error);
@@ -100,23 +102,25 @@ function viewforum ($fid){
  exit(json_encode(($db->query($sql))->fetch_all(MYSQLI_ASSOC)));
 }
 
-function get_me() {
+function me_helper(){
+ exit(json_encode(me()));
+}
+function me() {
  global $jsonobj, $db;
- $sql="select * from ci_users where username=? and password=?";
- $sth=$db->prepare($sql);
- if (isset($jsonobj->username) && isset($jsonobj->password_hash)) {
-  $u=$jsonobj->username;
-  $p=$jsonobj->password_hash;
-  $sth->bind_param("is",$u,$p);
+ $u=(isset($_REQUEST['username']) ? urldecode($_REQUEST['username'])  : $jsonobj->username);
+ $p=(isset($_REQUEST['password_hash']) ? urldecode($_REQUEST['password_hash'])  : $jsonobj->password_hash);
+ if (strlen($u)>0 && $u!==NULL) {
+  $sql="select * from ci_users where username=? and password=?";
+  $sth=$db->prepare($sql);
+  $sth->bind_param("ss",$u,$p);
   $sth->execute();
   $result = $sth->get_result();
-  if($result->num_rows) {
-   $user=$result->fetch_assoc();
-   exit(json_encode($user));
+  if($result->num_rows==1) {
+   return $result->fetch_assoc();
   }
  }
  $sql="select * from ci_users where id=1";
- exit(json_encode(($db->query($sql))->fetch_array(MYSQLI_ASSOC)));
+ return $db->query($sql)->fetch_array(MYSQLI_ASSOC);
 }
 
 
