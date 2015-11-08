@@ -3,17 +3,16 @@ require_once("config.php");
 require_once("lib/RegexRouter.php");
 $user=getuser();
 
+error_log("user: " . print_r($user,1));
 function getuser(){
  global $httproot, $cookie_name;
  $url=$httproot . "/api/me";
- if(isset($_COOKIE[$cookie_name])){
-  $_REQUEST=array_merge($_REQUEST,unserialize($_COOKIE[$cookie_name]));
+ $unserialized=unserialize($_COOKIE[$cookie_name]);
+ if(isset($unserialized['user_token'])) {
+  $qs="user_token=" . urlencode($unserialized['user_token']);
+  return curlstuff($url . "?" . $qs); 
  }
- if(!isset($_REQUEST['password_hash']) && isset ($_REQUEST['password'])){
-  $_REQUEST['password_hash']=$_REQUEST['password'];
- }
- $qs="username=" . urlencode($_REQUEST['username']) . "&password_hash=" . urlencode($_REQUEST['password_hash']);
- return curlstuff($url . "?" . $qs); 
+ return NULL;
 }
 
 //this section maps url pattern to function, so e.g. /bbs/api/forum/1 calls "viewforum(1)"
@@ -143,21 +142,14 @@ function login () {
  <?php
 }
 function loginpost () {
- global $httproot,$cookie_name;
- $requested_user=urldecode($_REQUEST['username']);
- $user=getuser();
- error_log("comparing " . $user->username . " with $requested_user");
- if (isset($user->username)) {
-  if ($user->username !== $requested_user){
-   exit ("login failed");
-  }
- } else {
+ global $httproot,$cookie_name,$user;
+ $url=$httproot . "/api/login";
+ $response=curlstuff($url,1);
+ if (!isset($response->user_token)) {
   exit ("login failed");
  }
-
  setcookie($cookie_name,serialize(
-  array("username"=>$user->username,
-        "password_hash"=>$user->password)
+  array("user_token"=>$response->user_token)
   ),0,"/");
  exit ("hello " . $user->username);
 }
@@ -185,7 +177,6 @@ function curlstuff($url, $post=0){
  $ch = curl_init();
  curl_setopt_array($ch,$curlopts);
  $output= json_decode(curl_exec($ch));
- //error_log(curl_error($ch));
  curl_close($ch);
  return $output;
 }

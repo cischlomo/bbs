@@ -13,13 +13,13 @@ $router = new RegexRouter(array(
   "topic"=>"viewtopic",
   "post"=>"getpost",
   "nt"=>"newtopicform",
-  "login"=>"login",
   "me"=>"me_helper",
   ),
  "post"=>array(
   "forum"=>"newtopic",
   "topic"=>"replytotopic",
   "post"=>"replytopost",
+  "login"=>"login",
  )
  ));
 $router->execute($_SERVER['REQUEST_URI']);
@@ -79,7 +79,6 @@ function newtopic($fid){
  global $jsonobj,$db;
  $user=me();
  error_log("user " . print_r($user,1));
- $jsonobj->cookie=$_COOKIE;
  $sql="insert into ci_topics (subject,posted,forum_id) values (?,?,?)";
  $sth=$db->prepare($sql) or die($db->error);
  $d=time();
@@ -106,21 +105,33 @@ function me_helper(){
  exit(json_encode(me()));
 }
 function me() {
- global $jsonobj, $db;
- $u=(isset($_REQUEST['username']) ? urldecode($_REQUEST['username'])  : $jsonobj->username);
- $p=(isset($_REQUEST['password_hash']) ? urldecode($_REQUEST['password_hash'])  : $jsonobj->password_hash);
- if (strlen($u)>0 && $u!==NULL) {
-  $sql="select * from ci_users where username=? and password=?";
-  $sth=$db->prepare($sql);
-  $sth->bind_param("ss",$u,$p);
-  $sth->execute();
-  $result = $sth->get_result();
-  if($result->num_rows==1) {
-   return $result->fetch_assoc();
-  }
+ global $jsonobj, $db, $cookie_seed;
+ $user_token=urldecode($_REQUEST['user_token']);
+ $unserialized=unserialize($user_token);
+ $md=md5($cookie_seed . $unserialized['password_hash']);
+ $sql="select * from ci_users where username=? and md5(concat('$cookie_seed',password))='" . $unserialized['password_hash'] ."'";
+ //error_log($sql);
+ $sth=$db->prepare($sql);
+ $sth->bind_param("s",$unserialized['username']);
+ $sth->execute();
+ $result = $sth->get_result();
+ return $result->fetch_array(MYSQLI_ASSOC);
+}
+
+function login(){
+ global $jsonobj, $db, $cookie_seed;
+ $u=$jsonobj->username;
+ $p=$jsonobj->password;
+ $sql="select * from ci_users where username=? and password=md5('$p')";
+ $sth=$db->prepare($sql);
+ $sth->bind_param("s",$u);
+ $sth->execute();
+ $result = $sth->get_result();
+ if($result->num_rows==1) {
+  exit(json_encode(array("user_token"=>serialize(array("username"=>$u,"password_hash"=>md5($cookie_seed . md5($p)))))));
  }
- $sql="select * from ci_users where id=1";
- return $db->query($sql)->fetch_array(MYSQLI_ASSOC);
+ exit("{}");
+
 }
 
 
