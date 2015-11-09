@@ -108,11 +108,9 @@ function me() {
  global $jsonobj, $db, $cookie_seed;
  $user_token=urldecode($_REQUEST['user_token']);
  $unserialized=unserialize($user_token);
- $md=md5($cookie_seed . $unserialized['password_hash']);
- $sql="select * from ci_users where username=? and md5(concat('$cookie_seed',password))='" . $unserialized['password_hash'] ."'";
- //error_log($sql);
+ $sql="select * from ci_users where username=? and md5(concat(?,password))=?";
  $sth=$db->prepare($sql);
- $sth->bind_param("s",$unserialized['username']);
+ $sth->bind_param("sss",$unserialized['username'],$cookie_seed,$unserialized['password_hash']);
  $sth->execute();
  $result = $sth->get_result();
  return $result->fetch_array(MYSQLI_ASSOC);
@@ -122,9 +120,9 @@ function login(){
  global $jsonobj, $db, $cookie_seed;
  $u=$jsonobj->username;
  $p=$jsonobj->password;
- $sql="select * from ci_users where username=? and password=md5('$p')";
+ $sql="select * from ci_users where username=? and password=md5(?)";
  $sth=$db->prepare($sql);
- $sth->bind_param("s",$u);
+ $sth->bind_param("ss",$u,$p);
  $sth->execute();
  $result = $sth->get_result();
  if($result->num_rows==1) {
