@@ -1,26 +1,15 @@
 <?php
 require_once("config.php");
 require_once("lib/RegexRouter.php");
-$user=getuser();
-
-error_log("user: " . print_r($user,1));
-function getuser(){
- global $httproot, $cookie_name;
- $url=$httproot . "/api/me";
- $unserialized=unserialize($_COOKIE[$cookie_name]);
- if(isset($unserialized['user_token'])) {
-  $qs="user_token=" . urlencode($unserialized['user_token']);
-  return curlstuff($url . "?" . $qs); 
- }
- return NULL;
-}
+require_once("lib/utility.php");
+$user=Utility::getuser();
 
 //this section maps url pattern to function, so e.g. /bbs/api/forum/1 calls "viewforum(1)"
 $router = new RegexRouter(array(
  "prefix"=>"/^\/bbs\/ui",
  "get"=>array(
   "forum"=>"viewforum",
-  "topic"=>"viewtopic",
+  "topic"=>"gettopic",
   "post"=>"getpost",
   "post\/reply\/form"=>"replypostform",
   "topic\/form"=>"newtopicform",
@@ -32,14 +21,15 @@ $router = new RegexRouter(array(
   "topic"=>"replytotopic",
   "post"=>"replytopost",
   "login"=>"loginpost",
-  )
+  ),
+ "delete"=>array()
  ));
 $router->execute($_SERVER['REQUEST_URI']);
 
 /******* and these are all the functions that are mapped to distinct url patterns *********/
 function viewforum ($fid){
  global $httproot, $cookie_name, $user;
- $topics=curlstuff($httproot . "/api/forum/$fid");
+ $topics=Utility::curlstuff($httproot . "/api/forum/$fid");
  if (isset($topics->error)){
   exit($topics->error);
  }
@@ -55,7 +45,7 @@ function replytopost ($pid){
  global $httproot;
  print "reply to post $pid<p>";
  $url= $httproot . "/api/post/$pid";
- $response=curlstuff($url,1);
+ $response=Utility::curlstuff($url,Utility::POST);
  getpost($response->pid);
  //exit(print_r($response,1));
 }
@@ -69,10 +59,10 @@ function replypostform ($pid){
  </form>
  <?php
 }
-function viewtopic ($tid){
+function gettopic ($tid){
  global $httproot;
  $url=$httproot . "/api/topic/$tid";
- $resp=curlstuff($url);
+ $resp=Utility::curlstuff($url);
  if (isset($resp->error)){
   exit($resp->error);
  }
@@ -81,8 +71,12 @@ function viewtopic ($tid){
  <p>
  <?php foreach ($resp->posts as $post) : ?>
   <a name="#<?= $post->pid ?>"></a>
-  <?= $post->message ?><a href="/bbs/ui/post/reply/form/<?= $post->pid ?>">Reply</a>
+  <?= $post->message ?>
   <p>
+  <?php foreach ($post->links as $k => $v) : ?>
+   <a href="<?= $v ?>"><?= $k ?></a> |
+  <?php endforeach ?>
+
  <?php endforeach ?>
 
 <h1>Reply</h1>
@@ -93,11 +87,25 @@ function viewtopic ($tid){
  <?php
 }
 function getpost ($pid){
+ //exit($pid);
  global $httproot;
  $url=$httproot . "/api/post/$pid";
- $response=curlstuff($url);
+ $response=Utility::curlstuff($url); //check if post exists
  if (isset($response->error)){
   exit($response->error);
+ }
+ if (isset($_GET['action']) && $_GET['action']=="delete" && $_GET['confirm']=='y'){
+  $result=Utility::curlstuff($httproot . "/api/post/$pid",Utility::DELETE);
+  if (isset($result->error)) {
+   exit ("error: " . $result->error);
+  }
+  exit ("deleted post " . $pid);
+ }
+ if (isset($_GET['action']) && $_GET['action']=="delete"){
+?>
+ are you sure you want to delete post <?= $pid ?> <a href="?action=delete&confirm=y"=>confirm</a>
+ <?php
+ exit();
  }
  header("Location: $httproot/ui/topic/" . $response->tid . "#" . $response->pid);
 }
@@ -105,13 +113,13 @@ function getpost ($pid){
 function replytotopic ($tid){
  global $httproot;
  $url=$httproot . "/api/topic/$tid";
- $response=curlstuff($url,1);
+ $response=Utility::curlstuff($url,Utility::POST);
  header ("Location: /bbs/redir.php?url=$httproot/ui/topic/$tid%23$response->pid");
 }
 function newtopic($fid){
  global $httproot;
  $url=$httproot . "/api/forum/$fid";
- $response=curlstuff($url,1);
+ $response=Utility::curlstuff($url,Utility::POST);
  header ("Location: /bbs/redir.php?url=$httproot/ui/topic/$response->topic_id");
 }
 
@@ -144,7 +152,7 @@ function login () {
 function loginpost () {
  global $httproot,$cookie_name,$user;
  $url=$httproot . "/api/login";
- $response=curlstuff($url,1);
+ $response=Utility::curlstuff($url,Utility::POST);
  if (!isset($response->user_token)) {
   exit ("login failed");
  }
@@ -159,27 +167,5 @@ function logout () {
  setcookie($cookie_name, null, -1, '/');
  exit ("you are logged out");
 }
-
-/*** curlstuff isn't mapped to a url its just a utility function to call the api with *****/
-function curlstuff($url, $post=0){
- $curlopts= array( 
-	CURLOPT_SSL_VERIFYPEER => 0,
-        CURLOPT_HEADER => 0, 
-	CURLOPT_RETURNTRANSFER => 1,
-        CURLOPT_URL => $url
- );
- if ($post>0){
-  $curlopts[CURLOPT_POST] = 1;
-  if (isset($_REQUEST)){
-   $curlopts[CURLOPT_POSTFIELDS] = json_encode($_REQUEST);
-  }
- }
- $ch = curl_init();
- curl_setopt_array($ch,$curlopts);
- $output= json_decode(curl_exec($ch));
- curl_close($ch);
- return $output;
-}
-
 
 ?>

@@ -20,11 +20,25 @@ $router = new RegexRouter(array(
   "topic"=>"replytotopic",
   "post"=>"replytopost",
   "login"=>"login",
- )
+ ),
+ "delete"=>array(
+  "post"=>"deletepost",
+  )
  ));
 $router->execute($_SERVER['REQUEST_URI']);
  
 /******* and these are all the functions that are mapped to distinct url patterns *********/
+function deletepost ($pid){
+ global $jsonobj,$db;
+ error_log ("delete post $pid");
+ $sth=$db->prepare("delete from ci_posts where id=?");
+ $sth->bind_param("i",$pid);
+ $sth->execute();
+ if ($db->errno) {
+  exit (json_encode(array("error"=>$db->error)));
+ }
+ exit (json_encode(array("pid"=>$pid)));
+}
 function replytopost ($pid){
  global $jsonobj,$db;
  $sql="select topic_id as tid from ci_posts where id=$pid";
@@ -48,7 +62,12 @@ function viewtopic ($tid){
  }
  $sql="select id as tid,message,replyto,id as pid from ci_posts where topic_id=$tid";
  $resp=$db->query($sql)->fetch_all(MYSQLI_ASSOC);
- exit(json_encode(array("tid"=>$tid,"subject"=>$subject,"posts"=>$resp)));
+ $output=array();
+ foreach ($resp as $row){
+  $row["links"]=array("delete"=>"/bbs/ui/post/".$row["pid"]."?action=delete");
+  $output[]=$row;
+ }
+ exit(json_encode(array("tid"=>$tid,"subject"=>$subject,"posts"=>$output)));
 }
 
 function getpost ($pid){
