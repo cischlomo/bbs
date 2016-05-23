@@ -16,13 +16,11 @@ class RegexRouter {
     }
 
     function __construct($arg){
-//exit(print_r($arg,1));
      $prefix=$arg['prefix'];
      foreach ($arg['get'] as $k=>$v){
        $this->get($prefix . "\/" . $k . "\/([0-9]+)\/?$/",$v) || //with arg
        $this->get($prefix . "\/" . $k . "\/?$/",$v) || //or without
-       $this->get($prefix . "\/" . $k . "\/?([^?]*)\?[^\/]*$/",$v); //QS
-       //$this->get($prefix . "\/" . $k . "\/?\??[^\/]*$/",$v); //QS
+       $this->get($prefix . "\/" . $k . "\/?([^?]*)\?[^\/]*$/",$v); //QueryString
      }
      foreach ($arg['post'] as $k=>$v){
        $this->post($prefix . "\/" . $k . "\/([0-9]+)\/?$/",$v) || //with arg
