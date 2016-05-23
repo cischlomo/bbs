@@ -1,32 +1,32 @@
 <?php
 require_once("config.php");
-require_once('lib/RegexRouter.php');
+require_once("lib/Router.php");
 $jsonobj=json_decode(file_get_contents("php://input"));
 $db=new Mysqli("localhost","root");
 $db->select_db("campidiot");
 
 //this section maps url pattern to function, so e.g. /bbs/api/forum/1 calls "viewforum(1)"
-$router = new RegexRouter(array(
- "prefix"=>"/^\/bbs\/api",
- "get"=>array(
+$methodmap=[
+ "GET"=>[
   "forum"=>"viewforum",
   "topic"=>"viewtopic",
   "post"=>"getpost",
   "nt"=>"newtopicform",
   "me"=>"me_helper",
-  ),
- "post"=>array(
+  ],
+ "POST"=>[
   "forum"=>"newtopic",
   "topic"=>"replytotopic",
   "post"=>"replytopost",
   "login"=>"login",
- ),
- "delete"=>array(
+ ],
+ "DELETE"=>[
   "post"=>"deletepost",
-  )
- ));
-$router->execute($_SERVER['REQUEST_URI']);
- 
+ ]
+];
+
+route($methodmap);
+
 /******* and these are all the functions that are mapped to distinct url patterns *********/
 function deletepost ($pid){
  global $jsonobj,$db;

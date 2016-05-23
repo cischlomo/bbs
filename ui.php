@@ -1,13 +1,12 @@
 <?php
 require_once("config.php");
-require_once("lib/RegexRouter.php");
+require_once("lib/Router.php");
 require_once("lib/utility.php");
 $user=Utility::getuser();
 
 //this section maps url pattern to function, so e.g. /bbs/api/forum/1 calls "viewforum(1)"
-$router = new RegexRouter(array(
- "prefix"=>"/^\/bbs\/ui",
- "get"=>array(
+$methodmap=[ 
+ "GET"=>[
   "forum"=>"viewforum",
   "topic"=>"gettopic",
   "post"=>"getpost",
@@ -15,16 +14,15 @@ $router = new RegexRouter(array(
   "topic\/form"=>"newtopicform",
   "login"=>"login",
   "logout"=>"logout",
-  ),
- "post"=>array(
+  ],
+ "POST"=>[
   "forum"=>"newtopic",
   "topic"=>"replytotopic",
   "post"=>"replytopost",
   "login"=>"loginpost",
-  ),
- "delete"=>array()
- ));
-$router->execute($_SERVER['REQUEST_URI']);
+  ],
+];
+route($methodmap);
 
 /******* and these are all the functions that are mapped to distinct url patterns *********/
 function viewforum ($fid){
