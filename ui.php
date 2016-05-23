@@ -3,7 +3,7 @@ require_once("config.php");
 require_once("lib/Router.php");
 require_once("lib/utility.php");
 $user=Utility::getuser();
-
+//exit("user: " . print_r($user,1));
 //this section maps url pattern to function, so e.g. /bbs/api/forum/1 calls "viewforum(1)"
 $methodmap=[ 
  "GET"=>[
@@ -11,7 +11,7 @@ $methodmap=[
   "topic"=>"gettopic",
   "post"=>"getpost",
   "post\/reply\/form"=>"replypostform",
-  "topic\/form"=>"newtopicform",
+  "new_topic"=>"newtopicform",
   "login"=>"login",
   "logout"=>"logout",
   ],
@@ -31,8 +31,12 @@ function viewforum ($fid){
  if (isset($topics->error)){
   exit($topics->error);
  }
- print "hello, $user->username<p>";
- print "<a href='/bbs/ui/topic/form/$fid'>new topic</a><p>";
+ if($user) {
+  print "hello, $user->username<p>";
+ } else {
+  print "<a href=\"/bbs/ui/login\">login</a><p>";
+ }
+ print "<a href='/bbs/ui/new_topic/$fid'>new topic</a><p>";
  print "<h1>Topics</h1>\n";
  foreach ($topics as $topic){
   print "<a href=\"/bbs/ui/topic/$topic->id\">$topic->subject</a>\n";
