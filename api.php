@@ -1,7 +1,7 @@
 <?php
 require_once("config.php");
 require_once("lib/Router.php");
-$jsonobj=json_decode(file_get_contents("php://input"));
+$jsonarr=json_decode(file_get_contents("php://input"),TRUE);
 $db=new Mysqli("localhost","root");
 $db->select_db("campidiot");
 
@@ -13,6 +13,7 @@ $methodmap=[
   "post"=>"getpost",
   "nt"=>"newtopicform",
   "me"=>"me_helper",
+  "config"=>"config"
   ],
  "POST"=>[
   "forum"=>"newtopic",
@@ -25,53 +26,67 @@ $methodmap=[
  ]
 ];
 
-route($methodmap);
+Router\route($methodmap);
 
 /******* and these are all the functions that are mapped to distinct url patterns *********/
+function viewtopic ($tid){
+ global $jsonarr,$db;
+ $sql="select subject,forum_id from ci_topics where id=$tid";
+ $topics=$db->query($sql) or die ($db->error);
+ if($topics->num_rows!=1) {
+  exit(json_encode(array("error"=>"no such topic")));
+ }
+ $topic=$topics->fetch_assoc();
+ $sql="select id as tid,message,replyto,id as pid from ci_posts where topic_id=$tid";
+ $posts=$db->query($sql)->fetch_all(MYSQLI_ASSOC);
+ $sql="select * from ci_forums where id=" . $topic["forum_id"];
+ //exit($sql);
+ $forum=($db->query($sql)->fetch_assoc());
+ $sql="select * from ci_navlinks";
+ $forum["navlinks"]=$db->query($sql)->fetch_all(MYSQLI_ASSOC);
+ //exit(print_r($forum,1));
+ exit(json_encode(["tid"=>$tid,"subject"=>$topic["subject"],"forum"=>$forum,"posts"=>$posts]));
+}
+
+function viewforum ($fid){
+ global $jsonarr, $db;
+ $sql="select id from ci_forums where id=$fid";
+ if ($db->query($sql)->num_rows==0) {
+  exit(json_encode(array("error"=>"no such forum")));
+ }
+ $sql="select * from ci_forums f where f.id=$fid";
+ list($forum)=$db->query($sql)->fetch_all(MYSQLI_ASSOC);
+ $sql="select * from ci_navlinks";
+ $forum["navlinks"]=$db->query($sql)->fetch_all(MYSQLI_ASSOC);
+ $forum["pagination"]=[];
+ $sql="select * from ci_topics where forum_id=$fid";
+ $forum["topics"]=$db->query($sql)->fetch_all(MYSQLI_ASSOC);
+ exit(json_encode($forum));
+}
 function deletepost ($pid){
- global $jsonobj,$db;
+ global $jsonarr,$db;
  error_log ("delete post $pid");
  $sth=$db->prepare("delete from ci_posts where id=?");
  $sth->bind_param("i",$pid);
- $sth->execute();
- if ($db->errno) {
-  exit (json_encode(array("error"=>$db->error)));
- }
+ $sth->execute() or exit (json_encode(array("error"=>$db->error)));
  exit (json_encode(array("pid"=>$pid)));
 }
 function replytopost ($pid){
- global $jsonobj,$db;
+ global $jsonarr,$db;
  $sql="select topic_id as tid from ci_posts where id=$pid";
  list($tid)=$db->query($sql)->fetch_row();
  $sql="insert into ci_posts (topic_id,message,replyto) values (?,?,?)";
  $sth=$db->prepare($sql);
- $sth->bind_param("isi",$tid,$jsonobj->message,$pid);
+ $sth->bind_param("isi",$tid,$jsonarr["message"],$pid);
  $sth->execute();
- $jsonobj->pid=$db->insert_id;
- $jsonobj->tid=$tid;
- exit(json_encode($jsonobj));
+ $jsonarr["pid"]=$db->insert_id;
+ $jsonarr["tid"]=$tid;
+ exit(json_encode($jsonarr));
 }
 
-function viewtopic ($tid){
- global $jsonobj,$db;
- $sql="select subject from ci_topics where id=$tid";
- $result=$db->query($sql) or die ($db->error);
- list($subject)=$result->fetch_row();
- if($subject===NULL) {
-  exit(json_encode(array("error"=>"no such topic")));
- }
- $sql="select id as tid,message,replyto,id as pid from ci_posts where topic_id=$tid";
- $resp=$db->query($sql)->fetch_all(MYSQLI_ASSOC);
- $output=array();
- foreach ($resp as $row){
-  $row["links"]=array("delete"=>"/bbs/ui/post/".$row["pid"]."?action=delete");
-  $output[]=$row;
- }
- exit(json_encode(array("tid"=>$tid,"subject"=>$subject,"posts"=>$output)));
-}
 
 function getpost ($pid){
- global $jsonobj,$db;
+ global $jsonarr,$db;
  $sql="select * from ci_posts where id=$pid";
  $resp=$db->query($sql)->fetch_assoc();
  if ($resp['id'] > 0){
@@ -84,71 +99,79 @@ function getpost ($pid){
  }
 }
 function replytotopic ($tid){
- global $jsonobj,$db;
+ global $jsonarr,$db;
  $sql="insert into ci_posts (topic_id,message) values (?,?)";
  $sth=$db->prepare($sql);
- $sth->bind_param("is",$tid,$jsonobj->message);
+ $sth->bind_param("is",$tid,$jsonarr["message"]);
  $sth->execute();
  $pid=$db->insert_id;
- $jsonobj->pid=$pid;
- $jsonobj->tid=$tid;
- exit(json_encode($jsonobj,1));
+ $jsonarr["pid"]=$pid;
+ $jsonarr["tid"]=$tid;
+ exit(json_encode($jsonarr,1));
 }
 function newtopic($fid){
- global $jsonobj,$db;
+ global $jsonarr,$db;
  $user=me();
  error_log("user " . print_r($user,1));
- $sql="insert into ci_topics (subject,posted,forum_id) values (?,?,?)";
+ $sql="insert into ci_topics (subject,posted,forum_id,owner,last_poster,poster) values (?,?,?,?,?,?)";
  $sth=$db->prepare($sql) or die($db->error);
  $d=time();
- $sth->bind_param("sii",$jsonobj->subject,$d,$fid);
+ $sth->bind_param("siisss",$jsonarr["subject"],$d,$fid,$user["username"],$user["username"],$user["username"]);
  $sth->execute();
  $tid=$db->insert_id;
- $sql="insert into ci_posts (topic_id,message) values (?,?)";
+ $sql="insert into ci_posts (topic_id,message,poster) values (?,?,?)";
  $sth=$db->prepare($sql) or die($db->error);
- $sth->bind_param("is",$tid,$jsonobj->message);
+ $sth->bind_param("iss",$tid,$jsonarr["message"],$user["username"]);
  $sth->execute();
  exit(json_encode(array("topic_id"=>$tid)));
 }
-function viewforum ($fid){
- global $jsonobj, $db;
- $sql="select id from ci_forums where id=$fid";
- if ($db->query($sql)->num_rows==0) {
-  exit(json_encode(array("error"=>"no such forum")));
- }
- $sql="select * from ci_topics where forum_id=$fid";
- exit(json_encode(($db->query($sql))->fetch_all(MYSQLI_ASSOC)));
-}
 
 function me_helper(){
- exit(json_encode(me()));
+ $me=me();
+ if ($me["id"]==1){
+	 $me["is_guest"]=TRUE;
+ }
+ exit(json_encode($me));
 }
 function me() {
- global $jsonobj, $db, $cookie_seed;
+ global $jsonarr, $db, $cookie_seed;
  $user_token=urldecode($_REQUEST['user_token']);
- $unserialized=unserialize($user_token);
- $sql="select * from ci_users where username=? and md5(concat(?,password))=?";
+ list($userid,$password_hash)=explode(":",$user_token,2);
+ $sql="select * from ci_users where id=? and md5(concat(?,password))=?";
  $sth=$db->prepare($sql);
- $sth->bind_param("sss",$unserialized['username'],$cookie_seed,$unserialized['password_hash']);
+ $sth->bind_param("iss",$userid,$cookie_seed,$password_hash);
  $sth->execute();
  $result = $sth->get_result();
- return $result->fetch_array(MYSQLI_ASSOC);
+ error_log("numrows: " . $result->num_rows);
+ if($result->num_rows==1) {
+  return $result->fetch_array(MYSQLI_ASSOC);
+ } else {
+  $sql="select * from ci_users where id=1";
+  return $db->query($sql)->fetch_array(MYSQLI_ASSOC);
+ }
 }
 
 function login(){
- global $jsonobj, $db, $cookie_seed;
- $u=$jsonobj->username;
- $p=$jsonobj->password;
+ global $jsonarr, $db, $cookie_seed;
+ $u=trim($jsonarr["username"]);
+ $p=trim($jsonarr["password"]);
  $sql="select * from ci_users where username=? and password=md5(?)";
  $sth=$db->prepare($sql);
  $sth->bind_param("ss",$u,$p);
  $sth->execute();
  $result = $sth->get_result();
  if($result->num_rows==1) {
-  exit(json_encode(array("user_token"=>serialize(array("username"=>$u,"password_hash"=>md5($cookie_seed . md5($p)))))));
+  exit(json_encode(["userid"=>($result->fetch_assoc())["id"],"password_hash"=>md5($cookie_seed . md5($p))]));
  }
  exit("{}");
+}
 
+function config(){
+	global $db;
+	$sql="select * from ci_config";	
+	$result=$db->query($sql) or exit(json_encode(["error"=>$db->error]));
+	$result=$result->fetch_all(MYSQLI_NUM) or exit(json_encode(["error"=>$db->error]));
+	exit(json_encode(array_combine(array_column($result,0),array_column($result,1))));
 }
 
 

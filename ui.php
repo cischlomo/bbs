@@ -1,19 +1,32 @@
 <?php
-require_once("config.php");
-require_once("lib/Router.php");
-require_once("lib/utility.php");
-$user=Utility::getuser();
-//exit("user: " . print_r($user,1));
+ini_set("display_errors","on");
+error_reporting(E_ALL);
+
+include_once("config.php");
+include_once("lib/Router.php");
+include_once("lib/utility.php");
+include_once("lib/pun.php");
+include 'smarty/Smarty.class.php';
+$smarty = new Smarty;
+$smarty->error_reporting = E_ALL & ~E_NOTICE;
+$smarty->caching = false;
+$smarty->registerPlugin("function","pagination","pagination");
+$smarty->registerPlugin("function","format_time","format_time");
+$user=Utility\api("/api/me");
+//exit("<pre>$user");
+$pun_config=Utility\api("/api/config");
+//exit("<pre>" . print_r($pun_config,1));
 //this section maps url pattern to function, so e.g. /bbs/api/forum/1 calls "viewforum(1)"
 $methodmap=[ 
  "GET"=>[
   "forum"=>"viewforum",
-  "topic"=>"gettopic",
+  "topic"=>"viewtopic",
   "post"=>"getpost",
-  "post\/reply\/form"=>"replypostform",
+  "reply"=>"replypostform",
   "new_topic"=>"newtopicform",
   "login"=>"login",
   "logout"=>"logout",
+  "me"=>"me"
   ],
  "POST"=>[
   "forum"=>"newtopic",
@@ -22,82 +35,62 @@ $methodmap=[
   "login"=>"loginpost",
   ],
 ];
-route($methodmap);
+Router\route($methodmap);
 
 /******* and these are all the functions that are mapped to distinct url patterns *********/
-function viewforum ($fid){
- global $httproot, $cookie_name, $user;
- $topics=Utility::curlstuff($httproot . "/api/forum/$fid");
- if (isset($topics->error)){
-  exit($topics->error);
+function viewtopic ($tid){
+ global  $cookie_name, $user, $smarty, $pun_config;
+ $topic=Utility\api("/api/topic/$tid");
+ 
+ if (isset($topic["error"])){
+  exit($topic["error"]);
  }
- if($user) {
-  print "hello, $user->username<p>";
- } else {
-  print "<a href=\"/bbs/ui/login\">login</a><p>";
- }
- print "<a href='/bbs/ui/new_topic/$fid'>new topic</a><p>";
- print "<h1>Topics</h1>\n";
- foreach ($topics as $topic){
-  print "<a href=\"/bbs/ui/topic/$topic->id\">$topic->subject</a>\n";
-  print "<h6>by: $topic->poster</h6>\n";
- }
+  //exit("<pre>".print_r($topic["posts"][0],1));
+
+ $smarty->assign("topic",$topic);
+ $smarty->assign("user",$user);
+ $smarty->assign("forum",$topic["forum"]);
+ $smarty->display("viewtopic.tpl");
 }
+function viewforum ($fid){
+ global  $cookie_name, $user, $smarty, $pun_config;
+ //exit("<pre>" . print_r($pun_config,1));
+ $forum=Utility\api("/api/forum/$fid");
+ $smarty->assign("user",$user);
+ if ($user["is_guest"]){
+	 $forum["navlinks"][]=["link_url"=>"/bbs/ui/login","link_text"=>"Login"];
+ } else {
+	 $forum["navlinks"][]=["link_url"=>"/bbs/ui/logout","link_text"=>"Logout"];
+	 //exit("<pre>".print_r($forum["navlinks"],1));
+ }
+ $smarty->assign("forum",$forum);
+ $smarty->display("viewforum.tpl");
+}
+
 function replytopost ($pid){
- global $httproot;
  print "reply to post $pid<p>";
- $url= $httproot . "/api/post/$pid";
- $response=Utility::curlstuff($url,Utility::POST);
+ $url=  "/api/post/$pid";
+ $response=Utility\api($url,Utility\POST);
  getpost($response->pid);
  //exit(print_r($response,1));
 }
 
 function replypostform ($pid){
- ?>
- <h1>Reply to post</h1>
- <form action="/bbs/ui/post/<?=$pid?>" method="POST">
-  message<input type="text" name="message"><br>
-  <input type="submit">
- </form>
- <?php
+	//exit($pid);
+	global  $httproot, $cookie_name, $user, $smarty, $pun_config;
+	 $smarty->display("reply.tpl");
 }
-function gettopic ($tid){
- global $httproot;
- $url=$httproot . "/api/topic/$tid";
- $resp=Utility::curlstuff($url);
- if (isset($resp->error)){
-  exit($resp->error);
- }
- ?>
- <h1>Topic: <?= $resp->subject ?></h1>
- <p>
- <?php foreach ($resp->posts as $post) : ?>
-  <a name="#<?= $post->pid ?>"></a>
-  <?= $post->message ?>
-  <p>
-  <?php foreach ($post->links as $k => $v) : ?>
-   <a href="<?= $v ?>"><?= $k ?></a> |
-  <?php endforeach ?>
 
- <?php endforeach ?>
-
-<h1>Reply</h1>
-<form action="/bbs/ui/topic/<?=$tid?>" method="POST">
-<textarea name="message"></textarea>
-<input type="submit">
-</form>
- <?php
-}
 function getpost ($pid){
- //exit($pid);
  global $httproot;
- $url=$httproot . "/api/post/$pid";
- $response=Utility::curlstuff($url); //check if post exists
+ 
+ $url= "/api/post/$pid";
+ $response=Utility\api($url); //check if post exists
  if (isset($response->error)){
   exit($response->error);
  }
  if (isset($_GET['action']) && $_GET['action']=="delete" && $_GET['confirm']=='y'){
-  $result=Utility::curlstuff($httproot . "/api/post/$pid",Utility::DELETE);
+  $result=Utility\api( "/api/post/$pid",Utility\DELETE);
   if (isset($result->error)) {
    exit ("error: " . $result->error);
   }
@@ -109,20 +102,20 @@ function getpost ($pid){
  <?php
  exit();
  }
- header("Location: $httproot/ui/topic/" . $response->tid . "#" . $response->pid);
+ header("Location: $httproot/ui/topic/" . $response["tid"] . "#" . $response["pid"]);
 }
 
 function replytotopic ($tid){
  global $httproot;
- $url=$httproot . "/api/topic/$tid";
- $response=Utility::curlstuff($url,Utility::POST);
- header ("Location: /bbs/redir.php?url=$httproot/ui/topic/$tid%23$response->pid");
+ $url= "/api/topic/$tid";
+ $response=Utility\api($url,Utility\POST);
+ header ("Location: $httproot/ui/topic/$tid%23" . $response["pid"]);
 }
 function newtopic($fid){
  global $httproot;
- $url=$httproot . "/api/forum/$fid";
- $response=Utility::curlstuff($url,Utility::POST);
- header ("Location: /bbs/redir.php?url=$httproot/ui/topic/$response->topic_id");
+ $url= "/api/forum/$fid";
+ $response=Utility\api($url,Utility\POST);
+ header ("Location: $httproot/ui/topic/" . $response["topic_id"]);
 }
 
  
@@ -140,8 +133,9 @@ message<input type="text" name="message"><br>
 
 function login () {
  global $user;
- if($user->id>1){
-  exit("you have to logout first");
+ //exit("<pre>hi".print_r($user,1));
+ if($user["id"]>1){
+  exit("hello " . $user["username"]);
  }
  ?>
  <form action="/bbs/ui/login" method="post">
@@ -152,16 +146,16 @@ function login () {
  <?php
 }
 function loginpost () {
- global $httproot,$cookie_name,$user;
- $url=$httproot . "/api/login";
- $response=Utility::curlstuff($url,Utility::POST);
- if (!isset($response->user_token)) {
+ global $cookie_name,$user;
+ $url= "/api/login";
+ $response=Utility\api($url,Utility\POST);
+ //exit("<pre>".print_r($response,1));
+ if (!isset($response["userid"])) {
   exit ("login failed");
  }
- setcookie($cookie_name,serialize(
-  array("user_token"=>$response->user_token)
-  ),0,"/");
- exit ("hello " . $user->username);
+ setcookie($cookie_name, $response["userid"] . ":" . $response["password_hash"] ,0,"/");
+ header("Location: /bbs/ui/login");
+ exit;
 }
 
 function logout () {
@@ -169,5 +163,63 @@ function logout () {
  setcookie($cookie_name, null, -1, '/');
  exit ("you are logged out");
 }
+function me(){
+	exit("<pre>" . print_r(Utility\api("/api/me"),1));
+}
+function pagination ($params, $smarty){
+ global $user;
+ $cur_forum=$params["forum"];
+ $p=(!isset($_GET['p']) || !is_numeric($_GET['p']) || $_GET['p'] <= 1 || $_GET['p'] > $num_pages) ? 1 : $_GET['p'];
+ $num_pages = ceil($cur_forum["num_topics"] / $user["disp_topics"]);
+ return  paginate($num_pages, $p, "blah");
+}
+function paginate($num_pages, $cur_page, $link_to)
+{
+	$pages = array();
+	$link_to_all = false;
 
+	// If $cur_page == -1, we link to all pages (used in viewforum.php)
+	if ($cur_page == -1)
+	{
+		$cur_page = 1;
+		$link_to_all = true;
+	}
+
+	if ($num_pages <= 1)
+		$pages = array('<strong>1</strong>');
+	else
+	{
+		if ($cur_page > 3)
+		{
+			$pages[] = '<a href="'.$link_to.'&amp;p=1">1</a>';
+
+			if ($cur_page != 4)
+				$pages[] = '&hellip;';
+		}
+
+		// Don't ask me how the following works. It just does, OK? :-)
+		for ($current = $cur_page - 2, $stop = $cur_page + 3; $current < $stop; ++$current)
+		{
+			if ($current < 1 || $current > $num_pages)
+				continue;
+			else if ($current != $cur_page || $link_to_all)
+				$pages[] = '<a href="'.$link_to.'&amp;p='.$current.'">'.$current.'</a>';
+			else
+				$pages[] = '<strong>'.$current.'</strong>';
+		}
+
+		if ($cur_page <= ($num_pages-3))
+		{
+			if ($cur_page != ($num_pages-3))
+				$pages[] = '&hellip;';
+
+			$pages[] = '<a href="'.$link_to.'&amp;p='.$num_pages.'">'.$num_pages.'</a>';
+		}
+	}
+
+	return implode('&nbsp;', $pages);
+}
+function get_remote_address() {
+	return $_SERVER["REMOTE_ADDR"];
+}
 ?>
