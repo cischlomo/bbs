@@ -1,3 +1,4 @@
+{$forum=$topic["forum"]}
 {include file="header.tpl"}
 <div class="linkst">
 	<div class="inbox">
@@ -36,7 +37,7 @@
 {/section}
 <div class="postlinksb">
 	<div class="inbox">
-		<p class="postlink conr"><?php echo $post_link ?></p>
+		<p class="postlink conr"><a href="/bbs/ui/reply/topic/{$topic["tid"]}">Post Reply</a></p>
 		<p class="pagelink conl"><?php echo $paging_links ?></p>
 		<ul><li><a href="index.php">Index</a></li><li>&nbsp;&raquo;&nbsp;<a href="/bbs/ui/forum/{$forum['id']}">{$forum['forum_name']}</a></li><li>&nbsp;&raquo;&nbsp;{$topic['subject']}</li></ul>
 		 
